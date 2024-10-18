@@ -1,0 +1,80 @@
+/* 기본적인 레이아웃 설정 */
+.user-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f0f0f0;
+}
+
+.user-container h2 {
+    font-size: 2.5rem; /* TV 환경에 맞게 글자 크기 조정 */
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.user-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2x2 그리드 */
+    grid-gap: 20px; /* TV 환경에서 더 넓은 간격 */
+    margin-bottom: 20px;
+    width: 80%; /* 그리드 전체 너비 조정 */
+    height: 50%; /* 그리드 전체 높이 조정 */
+}
+
+.user-grid button {
+    padding: 1.5rem; /* 버튼 크기 증가 */
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px; /* TV용 버튼의 둥근 모서리 추가 */
+    font-size: 1.5rem; /* 버튼 텍스트 크기 증가 */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    height: 100%; /* 버튼의 높이 고정 */
+    width: 100%; /* 버튼 너비를 그리드 셀에 맞게 확장 */
+}
+
+.user-grid button:hover {
+    background-color: #45a049;
+}
+
+/* 빈 칸 버튼 숨김 */
+.user-grid button[style="visibility: hidden;"] {
+    background-color: transparent;
+    border: none;
+    cursor: default;
+}
+
+/* 페이지 버튼 스타일 */
+.page-buttons {
+    display: flex;
+    justify-content: center;
+    background: none;
+    background-color: transparent;
+    gap: 40px; /* 버튼 간의 간격을 넓게 조정 */
+    margin-top: 30px;
+}
+
+.page-buttons button {
+    border: none;
+    cursor: pointer;
+    margin: 20px;
+    background-color: transparent;
+}
+
+.button-image {
+    width: 80px;
+    height: auto;
+}
+
+.page-buttons button:disabled {
+    background-color: #f0f0f0;
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.page-buttons button:hover:not(:disabled) {
+    background-color: transparent;
+}

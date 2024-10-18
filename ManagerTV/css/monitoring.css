@@ -1,0 +1,51 @@
+.monitoring-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    height: 50vh; /* 화면 절반 차지 */
+    padding: 20px;
+    position: relative;
+}
+
+.graph-container {
+    margin-top: 3%;
+    width: 48%; /* 좌우 공간 나눔 */
+    height: 90%; /* 절반 크기 */
+}
+
+.graph-left {
+    /* 좌상단에 위치한 그래프 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.graph-right {
+    /* 우상단에 위치한 그래프 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: none; /* 기본 버튼 배경 제거 */
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.button-image {
+    width: 50px;  /* 이미지 크기 */
+    height: auto; /* 비율 유지 */
+}
+
+.warning {
+    text-align: center;
+    color: red;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
