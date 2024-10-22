@@ -57,8 +57,8 @@ const showUserScreen = (loggedInUsername) => {
                 }
             
                 userButton.addEventListener('click', () => {
-                    // 선택된 사용자 모니터링 데이터와 함께 페이지 변경
-                    changePage('monitoring', loggedInUsername, user.name, user.monitoring);
+                    // 선택된 사용자 모니터링 데이터와 함께 dashboard.js로 페이지 변경
+                    changePage('dashboard', loggedInUsername, user.name, user.monitoring);
                 });
                 userGrid.appendChild(userButton);
             });

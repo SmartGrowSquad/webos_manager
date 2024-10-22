@@ -64,8 +64,5 @@ const showToast = (message) => {
     }, 2000); // 2초 후에 Toast가 사라짐
 };
 
-// 초기 화면을 로그인 화면으로 설정
-showAuthScreen();
-
 // showAuthScreen 함수를 기본으로 내보내기
 export default showAuthScreen;
