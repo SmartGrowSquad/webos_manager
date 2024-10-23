@@ -4,7 +4,12 @@
   "vendor": "My Company",
   "type": "web",
   "main": "index.html",
-  "title": "manager",
+  "title": "Manager",
   "icon": "icon.png",
-  "largeIcon": "largeIcon.png"
+  "largeIcon": "largeIcon.png",
+  "requiredPermissions": [
+     "luna-send",
+     "network",
+     "all"
+  ]
 }

@@ -70,7 +70,7 @@
 }
 
 /* Sales Records Container */
-#salesRecords {
+#salesRecords #inventoryRecords{
     display: flex;
     flex-direction: column;
     justify-content: flex-start; /* Start content from the top */
@@ -196,4 +196,11 @@
 
 .warning {
     color: red;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 150px; /* 30px을 좌우 패딩으로 설정하여 간격을 늘림 */
+    border: 1px solid #ddd;
+    text-align: center;
+    white-space: nowrap; /* 줄바꿈 방지 */
 }

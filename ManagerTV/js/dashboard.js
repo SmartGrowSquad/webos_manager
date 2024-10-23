@@ -1,6 +1,11 @@
+const axios = require('axios');
+const mainServerIP = 'http://192.168.29.181:8000';
+import { changePage } from './app.js';
+import { loadSettingData, saveSettingData } from './settingManager.js';
+
 let updateInterval;
 
-const showDashboardScreen = (monitoringData, loggedInUsername, userName) => {
+const showDashboardScreen = (selectedUserId) => {
     const root = document.getElementById('root');
     root.innerHTML = `
     <div class="dashboard-container">
@@ -9,68 +14,74 @@ const showDashboardScreen = (monitoringData, loggedInUsername, userName) => {
             <button class="sidebar-btn" id="btn-temperature">온습도</button>
             <button class="sidebar-btn" id="btn-growth">성장률</button>
             <button class="sidebar-btn" id="btn-sales">판매기록</button>
+            <button class="sidebar-btn" id="btn-inven">재고</button>
             <button class="sidebar-btn" id="btn-settings">설정</button>
         </div>
         <div class="content" id="content-area">
         </div>
         <div id="toast" class="toast"></div>
     </div>
-`;
+    `;
 
+    axios.post(mainServerIP + "/growth", { 
+        uId: selectedUserId,
+    })
+    .then(response => {
+        console.log('Growth Data:', response.data); // 서버로부터 받은 데이터 출력
+    })
+    .catch(error => {
+        console.error('Error fetching climate data:', error);
+    });
 
-    loadContent('온습도', monitoringData, loggedInUsername, userName);
-    clearInterval(updateInterval); // 기존 interval이 있으면 제거
+    // 기본 콘텐츠 로드
+    loadContent("온습도", null, null);
+    clearInterval(updateInterval); // 기존 interval 제거
     updateInterval = setInterval(() => {
-        loadContent('온습도', monitoringData, loggedInUsername, userName);
-    }, 60000); // 1분마다 업데이트
+        loadContent("온습도", null, null);
+    }, 60000); // 1분 (60000ms)
 
-    // 페이지 이동 시 interval을 제거하고 새로운 섹션에 대해 설정
+    // 페이지 이동 시 interval을 제거
     document.getElementById('btn-back').addEventListener('click', () => {
-        clearInterval(updateInterval); // interval 제거
-        changePage('user');
+        clearInterval(updateInterval);
+        changePage('user'); // 사용자 페이지로 이동
     });
 
     document.getElementById('btn-temperature').addEventListener('click', () => {
-        clearInterval(updateInterval); // interval 제거
-        loadContent('온습도', monitoringData, loggedInUsername, userName);
-        // 1분마다 데이터를 업데이트
+        clearInterval(updateInterval);
+        loadContent("온습도", null, null);
         updateInterval = setInterval(() => {
-            loadContent('온습도', monitoringData, loggedInUsername, userName);
-        }, 60000); // 1분 (60000ms)
+            loadContent("온습도", null, null);
+        }, 60000);
     });
 
     document.getElementById('btn-growth').addEventListener('click', () => {
-        clearInterval(updateInterval); // interval 제거
-        loadContent('성장률', null, loggedInUsername, userName);
-        // 1분마다 데이터를 업데이트
-        updateInterval = setInterval(() => {
-            loadContent('성장률', null, loggedInUsername, userName);
-        }, 60000); // 1분 (60000ms)
+        clearInterval(updateInterval);
+        loadContent('성장률', null, selectedUserId); // 성장률 섹션 로드
     });
 
     document.getElementById('btn-sales').addEventListener('click', () => {
-        clearInterval(updateInterval); // interval 제거
-        loadContent('판매기록', null, loggedInUsername, userName);
-        // 1분마다 데이터를 업데이트
-        updateInterval = setInterval(() => {
-            loadContent('판매기록', null, loggedInUsername, userName);
-        }, 60000); // 1분 (60000ms)
+        clearInterval(updateInterval);
+        loadContent('판매기록', null, selectedUserId); // 판매 기록 섹션 로드
+    });
+
+    document.getElementById('btn-inven').addEventListener('click', () => {
+        clearInterval(updateInterval);
+        loadContent('재고', null, selectedUserId); // 재고 섹션 로드
     });
 
     document.getElementById('btn-settings').addEventListener('click', () => {
-        clearInterval(updateInterval); // interval 제거
-        loadContent('설정', monitoringData, loggedInUsername, userName);
-        // 설정 페이지는 1분마다 업데이트가 필요 없으니 setInterval 생략
+        clearInterval(updateInterval);
+        loadContent('설정', null); // 설정 섹션 로드
     });
 };
 
-// 컨텐츠를 동적으로 변경하는 함수
-const loadContent = (section, monitoringData, loggedInUsername, userName) => {
+// 콘텐츠를 동적으로 로드하는 함수
+const loadContent = (section, monitoringData, selectedUserId) => {
     const contentArea = document.getElementById('content-area');
     
     if (section === '온습도') {
         contentArea.innerHTML = `
-        <h1>온습도 (${userName})</h1>
+        <h1>온습도</h1>
             <p id="warning" class="warning"></p>
             <div class="monitoring-container">
                 <div class="graph-container graph-left">
@@ -79,115 +90,97 @@ const loadContent = (section, monitoringData, loggedInUsername, userName) => {
                 <div class="graph-container graph-right">
                     <canvas id="humidityGraph"></canvas>
                 </div>
-                
             </div>
         `;
-
-        // 데이터를 다시 가져오는 함수
-        const fetchMonitoringData = () => {
-            fetch('http://localhost:3000/monitoring-data') // 데이터를 다시 가져옴
-                .then(response => response.json())
-                .then(data => {
-                    // 선택적 체이닝 대신 조건문으로 데이터 유효성 검사
-                    let userMonitoringData = null;
-                    if (data && data[loggedInUsername]) {
-                        userMonitoringData = data[loggedInUsername].find(user => user.name === userName);
-                    }
-
-                    if (!userMonitoringData) {
-                        console.error('Invalid monitoring data');
-                        return;
-                    }
-
-                    // 기준 온도를 설정하고 경고 메시지 처리
-                    fetch('http://localhost:3000/setting-data')
-                        .then(response => response.json())
-                        .then(settingData => {
-                            const thresholdTemperature = settingData[loggedInUsername][userName].thresholdTemperature;
-                            if (userMonitoringData.monitoring.temperature[0] > thresholdTemperature) {
-                                document.getElementById('warning').textContent = 'Warning: High Temperature!';
-                            } else {
-                                document.getElementById('warning').textContent = '';
-                            }
-                        })
-                        .catch(error => console.error('Error loading setting data:', error));
-
-                    // 온도 그래프 그리기
-                    const tempCtx = document.getElementById('temperatureGraph').getContext('2d');
-                    new Chart(tempCtx, {
-                        type: 'line',
-                        data: {
-                            labels: userMonitoringData.monitoring.temperature.map((_, i) => i + 1).reverse(),
-                            datasets: [{
-                                label: '온도 (°C)',
-                                data: userMonitoringData.monitoring.temperature.slice().reverse(),
-                                borderColor: 'red',
-                                fill: false,
-                                tension: 0.5
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false,
-                            y: {
-                                min: 10,
-                                max: 30,
-                            },
-                            plugins: {
-                                legend: {
-                                    labels: {
-                                        font: {
-                                            size: 18
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-
-                    // 습도 그래프 그리기
-                    const humCtx = document.getElementById('humidityGraph').getContext('2d');
-                    new Chart(humCtx, {
-                        type: 'line',
-                        data: {
-                            labels: userMonitoringData.monitoring.humidity.map((_, i) => i + 1).reverse(),
-                            datasets: [{
-                                label: '습도 (%)',
-                                data: userMonitoringData.monitoring.humidity.slice().reverse(),
-                                borderColor: 'blue',
-                                fill: false,
-                                tension: 0.5
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false,
-                            y: {
-                                min: 0,
-                                max: 100,
-                            },
-                            plugins: {
-                                legend: {
-                                    labels: {
-                                        font: {
-                                            size: 18
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                })
-                .catch(error => console.error('Error loading monitoring data:', error));
+    
+        // 더미 데이터
+        const dummyData = {
+            temperature: [21, 31, 25, 33, 29, 26, 32, 28, 27, 33, 35, 30, 25, 32, 28, 34, 26, 30, 29, 31, 27, 28, 30, 31, 34, 29, 32, 33, 26, 28, 35, 27, 29, 32, 31, 30, 28, 27, 29, 34, 33, 31, 30, 27, 35, 32, 29, 31, 30, 34],
+            humidity: [33, 33, 30, 28, 35, 31, 32, 33, 29, 28, 26, 30, 33, 29, 32, 27, 35, 28, 30, 33, 32, 34, 31, 33, 29, 28, 31, 32, 27, 35, 30, 29, 31, 28, 34, 32, 33, 30, 29, 27, 28, 32, 30, 31, 34, 33, 27, 28, 29, 32]
         };
-
-        // 페이지가 로드될 때 데이터를 가져옴
-        fetchMonitoringData();
+    
+        // 기준 온도를 설정하고 경고 메시지 처리 (임의의 기준 온도 설정)
+        const thresholdTemperature = 30;
+        if (dummyData.temperature[0] > thresholdTemperature) {
+            document.getElementById('warning').textContent = 'Warning: High Temperature!';
+        } else {
+            document.getElementById('warning').textContent = '';
+        }
+    
+        // 온도 그래프 그리기
+        const tempCtx = document.getElementById('temperatureGraph').getContext('2d');
+        new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: dummyData.temperature.map((_, i) => i + 1).reverse(),
+                datasets: [{
+                    label: '온도 (°C)',
+                    data: dummyData.temperature.slice().reverse(),
+                    borderColor: 'red',
+                    fill: false,
+                    tension: 0.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    y: {
+                        min: 10,
+                        max: 40, // 더미 데이터에 맞게 범위를 10~40으로 설정
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                size: 18
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    
+        // 습도 그래프 그리기
+        const humCtx = document.getElementById('humidityGraph').getContext('2d');
+        new Chart(humCtx, {
+            type: 'line',
+            data: {
+                labels: dummyData.humidity.map((_, i) => i + 1).reverse(),
+                datasets: [{
+                    label: '습도 (%)',
+                    data: dummyData.humidity.slice().reverse(),
+                    borderColor: 'blue',
+                    fill: false,
+                    tension: 0.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100, // 습도는 0~100 범위
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: {
+                                size: 18
+                            }
+                        }
+                    }
+                }
+            }
+        });
     } else if (section === '성장률') {
         contentArea.innerHTML = `
-        <h1>성장률 (${userName})</h1>
+        <h1>성장률</h1>
         <div class="growth-container">
             <div class="growth-grid" id="growthGrid"></div>
             <div class="growth_page-buttons">
@@ -197,164 +190,290 @@ const loadContent = (section, monitoringData, loggedInUsername, userName) => {
         </div>
         `;
     
-        fetch('http://localhost:3000/growth-data')
-            .then(response => response.json())
-            .then(growthData => {
-                // loggedInUsername에 따라 admin 또는 user 데이터를 가져옴
-                const userGroup = growthData[loggedInUsername];
+        // 서버에 selectedUserId를 사용하여 데이터를 요청
+        axios.post(mainServerIP + "/growth", { 
+            uId: selectedUserId 
+        })
+        .then(response => {
+            console.log('Selected User ID:', selectedUserId); // selectedUserId 출력
+            const results = response.data.results;
+            console.log('Results:', results); // 서버로부터 받은 데이터를 출력
+        
+            // selectedUserId와 일치하는 u_id 데이터를 필터링
+            const filteredResults = results.filter(item => item.u_id === selectedUserId && item.growth !== null);
+        
+            console.log('Filtered Results:', filteredResults); // 필터링된 결과를 출력
+        
+            if (!filteredResults || filteredResults.length === 0) {
+                throw new Error(`No valid growth data found for user ${selectedUserId}`);
+            }
     
-                if (!userGroup) {
-                    throw new Error(`No data found for ${loggedInUsername}`);
-                }
+            // u_id별로 데이터를 그룹화
+            const groupedResults = filteredResults.reduce((acc, item) => {
+                if (!acc[item.u_id]) acc[item.u_id] = [];
+                acc[item.u_id].push(item);
+                return acc;
+            }, {});
     
-                // userName에 해당하는 데이터를 찾음
-                const user = userGroup.find(user => user.name === userName);
+            // 각 u_id 그룹의 데이터를 날짜순으로 정렬
+            Object.keys(groupedResults).forEach(u_id => {
+                groupedResults[u_id].sort((a, b) => new Date(a.predictDate) - new Date(b.predictDate));
+            });
     
-                if (!user) {
-                    throw new Error(`No growth data found for ${userName}`);
-                }
+            const growthPerPage = 2; // 한 페이지에 최대 2개씩 표시 (2x1 그리드)
+            let currentPage = 0;
     
-                const growthKeys = Object.keys(user.growth);
-                const growthPerPage = 2; // 한 페이지에 최대 4개씩 표시 (2x2 그리드)
-                let currentPage = 0;
+            const renderGrowthGrid = (page) => {
+                const growthGrid = document.getElementById('growthGrid');
+                growthGrid.innerHTML = ''; // 그리드를 초기화
     
-                const renderGrowthGrid = (page) => {
-                    const growthGrid = document.getElementById('growthGrid');
-                    growthGrid.innerHTML = ''; // 그리드를 초기화
+                // 페이지의 시작 인덱스와 끝 인덱스를 계산
+                const startIndex = page * growthPerPage;
+                const endIndex = Math.min(startIndex + growthPerPage, Object.keys(groupedResults).length);
+    
+                // 현재 페이지에 표시할 u_id 그룹을 선택
+                const currentUids = Object.keys(groupedResults).slice(startIndex, endIndex);
+    
+                currentUids.forEach((u_id, index) => {
+                    const growthDiv = document.createElement('div');
+                    growthDiv.classList.add('growth-item');
+                    const latestDate = new Date(groupedResults[u_id][groupedResults[u_id].length - 1].predictDate).toISOString().split('T')[0];
                 
-                    const startIndex = page * growthPerPage;
-                    const endIndex = Math.min(startIndex + growthPerPage, growthKeys.length);
-                    const currentGrowth = growthKeys.slice(startIndex, endIndex);
-                
-                    currentGrowth.forEach((growthId, index) => {
-                        const growthItem = document.createElement('div');
-                        growthItem.classList.add('growth-item');
-                        growthItem.innerHTML = `<h3>${growthId}</h3>`;
-                        growthGrid.appendChild(growthItem);
-                    
-                        // 캔버스 생성 및 고유 ID 설정
-                        const canvas = document.createElement('canvas');
-                        canvas.id = `growthCanvas_${page}_${index}`;  // 페이지 및 인덱스를 포함한 고유 ID
-                        growthItem.appendChild(canvas);
-                    
-                        const growthCtx = document.getElementById(`growthCanvas_${page}_${index}`).getContext('2d');
-                        
-                        new Chart(growthCtx, {
-                            type: 'line',
-                            data: {
-                                labels: Array.from({ length: user.growth[growthId].length }, (_, i) => i + 1),
-                                datasets: [{
-                                    label: '성장률 (%)',
-                                    data: user.growth[growthId].slice().reverse(),  // 데이터를 역순으로 처리
-                                    borderColor: 'green',
-                                    fill: false,
-                                    tension: 0.5
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        min: 0,
-                                        max: 100
-                                    }
+                    // 최신의 predictDate를 예상일로 표시
+                    growthDiv.innerHTML = `<h3>Jig: ${groupedResults[u_id][0].jignum}, 예상일: ${latestDate}</h3>`;
+                    growthGrid.appendChild(growthDiv);
+                    growthGrid.appendChild(growthDiv);
+    
+                    // 캔버스 생성 및 고유 ID 설정
+                    const canvas = document.createElement('canvas');
+                    canvas.id = `growthCanvas_${page}_${index}`;  // 페이지 및 인덱스를 포함한 고유 ID
+                    growthDiv.appendChild(canvas);
+    
+                    const growthCtx = document.getElementById(`growthCanvas_${page}_${index}`).getContext('2d');
+    
+                    // u_id 그룹의 성장률 데이터를 날짜 기준으로 정렬된 상태에서 준비
+                    const growthData = groupedResults[u_id].map(item => item.growth);
+                    const labels = groupedResults[u_id].map(item => new Date(item.predictDate).toISOString().split('T')[0]);
+    
+                    new Chart(growthCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels, // X축 레이블 날짜 순
+                            datasets: [{
+                                label: '성장률 (%)',
+                                data: growthData,  // 성장률 데이터
+                                borderColor: 'green',
+                                fill: false,
+                                tension: 0.5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    min: 0,
+                                    max: 100
                                 }
                             }
-                        });
+                        }
                     });
-                
-                    // 빈 공간 채우기
-                    const emptySlots = growthPerPage - currentGrowth.length;
-                    for (let i = 0; i < emptySlots; i++) {
-                        const emptyItem = document.createElement('div');
-                        emptyItem.classList.add('growth-item', 'empty');
-                        growthGrid.appendChild(emptyItem);
-                    }
-                };
-                
-    
-                // 페이지 전환
-                document.getElementById('prevPageButton').addEventListener('click', () => {
-                    if (currentPage > 0) {
-                        currentPage--;
-                        renderGrowthGrid(currentPage);
-                    }
                 });
     
-                document.getElementById('nextPageButton').addEventListener('click', () => {
-                    if (currentPage < Math.ceil(growthKeys.length / growthPerPage) - 1) {
-                        currentPage++;
-                        renderGrowthGrid(currentPage);
-                    }
-                });
+                // 빈 공간 채우기
+                const emptySlots = growthPerPage - currentUids.length;
+                for (let i = 0; i < emptySlots; i++) {
+                    const emptyItem = document.createElement('div');
+                    emptyItem.classList.add('growth-item', 'empty');
+                    growthGrid.appendChild(emptyItem);
+                }
+            };
     
-                renderGrowthGrid(currentPage);
-            })
-            .catch(error => {
-                console.error('Error loading growth data:', error);
-                showToast('성장률 데이터를 불러오는 중 오류가 발생했습니다.');
+            // 페이지 전환
+            document.getElementById('prevPageButton').addEventListener('click', () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    renderGrowthGrid(currentPage);
+                }
             });
-    } else if (section === '판매기록') {
+    
+            document.getElementById('nextPageButton').addEventListener('click', () => {
+                if (currentPage < Math.ceil(Object.keys(groupedResults).length / growthPerPage) - 1) {
+                    currentPage++;
+                    renderGrowthGrid(currentPage);
+                }
+            });
+    
+            renderGrowthGrid(currentPage); // 첫 번째 페이지 렌더링
+        })
+        .catch(error => {
+            console.error('Error loading growth data:', error);
+            showToast('성장률 데이터를 불러오는 중 오류가 발생했습니다.');
+        });
+    }
+    
+     else if (section === '판매기록') {
+        const itemsPerPage = 12; // 한 페이지에 보여줄 항목 수
+        let currentPage = 0;
+
         contentArea.innerHTML = `
-            <h1>판매기록 (${userName})</h1>
-            <div id="salesRecords"></div>
+            <h1>판매기록</h1>
+            <table id="salesTable" class="data-table">
+                <thead>
+                    <tr>
+                        <th>판매일</th>
+                        <th>판매시간</th>
+                        <th>품목</th>
+                        <th>수량</th>
+                    </tr>
+                </thead>
+                <tbody id="salesRecords"></tbody>
+            </table>
             <div class="page-buttons">
-                <button id="prevPageButton">이전</button>
-                <button id="nextPageButton">다음</button>
+                <button id="prevPageButton" disabled>이전</button>
+                <button id="nextPageButton" disabled>다음</button>
             </div>
         `;
-    
-        fetch('http://localhost:3000/sales-data')
-            .then(response => response.json())
-            .then(salesData => {
-                const userSales = salesData[loggedInUsername][userName];
-                const salesContainer = document.getElementById('salesRecords');
-                const salesPerPage = 20; // 한 페이지에 최대 10개 표시
-                let currentPage = 0;
-    
+        
+        axios.post(mainServerIP + "/puchase", { uId: selectedUserId })
+            .then(response => {
+                const resultsArray = response.data.results.filter(item => item.status === 1); // 판매기록
+                const totalPages = Math.ceil(resultsArray.length / itemsPerPage);
+                
                 const renderSalesRecords = (page) => {
+                    const salesContainer = document.getElementById('salesRecords');
                     salesContainer.innerHTML = ''; // 기존 내용 초기화
-    
-                    const startIndex = page * salesPerPage;
-                    const endIndex = Math.min(startIndex + salesPerPage, userSales.length);
-                    const currentSales = userSales.slice(startIndex, endIndex);
-    
+                    
+                    const startIndex = page * itemsPerPage;
+                    const endIndex = Math.min(startIndex + itemsPerPage, resultsArray.length);
+                    const currentSales = resultsArray.slice(startIndex, endIndex);
+                    
                     currentSales.forEach(sale => {
-                        const saleElement = document.createElement('p');
-                        saleElement.textContent = `${sale.date}: ${sale.plantName}`;
-                        salesContainer.appendChild(saleElement);
+                        const saleRow = document.createElement('tr');
+                        
+                        // 날짜와 시간 분리
+                        const dateTime = sale.updated_at.split('T');
+                        const sales_date = dateTime[0];
+                        const time = dateTime[1].split('.')[0];
+                        
+                        saleRow.innerHTML = `
+                            <td>${sales_date}</td>
+                            <td>${time}</td>
+                            <td>${sale.name}</td>
+                            <td>${sale.amount}</td>
+                        `;
+                        salesContainer.appendChild(saleRow);
                     });
-    
-                    // 이전 버튼 활성화
+
+                    // 이전 버튼 활성화/비활성화
                     document.getElementById('prevPageButton').disabled = page === 0;
-    
-                    // 다음 버튼 활성화
-                    document.getElementById('nextPageButton').disabled = endIndex >= userSales.length;
+                    // 다음 버튼 활성화/비활성화
+                    document.getElementById('nextPageButton').disabled = page >= totalPages - 1;
                 };
-    
-                // 페이지 전환 버튼 클릭 이벤트 리스너
+
+                renderSalesRecords(currentPage); // 초기 페이지 렌더링
+
+                // 페이지 전환 버튼
                 document.getElementById('prevPageButton').addEventListener('click', () => {
                     if (currentPage > 0) {
                         currentPage--;
                         renderSalesRecords(currentPage);
                     }
                 });
-    
+
                 document.getElementById('nextPageButton').addEventListener('click', () => {
-                    if ((currentPage + 1) * salesPerPage < userSales.length) {
+                    if (currentPage < totalPages - 1) {
                         currentPage++;
                         renderSalesRecords(currentPage);
                     }
                 });
-    
-                renderSalesRecords(currentPage); // 초기 렌더링
             })
-            .catch(error => console.error('Error loading sales data:', error));
-    }  else if (section === '설정') {
+            .catch(error => {
+                console.error('Error loading sales data:', error);
+                showToast('판매기록 데이터를 불러오는 중 오류가 발생했습니다.');
+            });
+
+    // 재고 섹션
+    } else if (section === '재고') {
+        const itemsPerPage = 12; // 한 페이지에 보여줄 항목 수
+        let currentPage = 0;
+
         contentArea.innerHTML = `
+            <h1>재고</h1>
+            <table id="inventoryTable" class="data-table">
+                <thead>
+                    <tr>
+                        <th>등록일</th>
+                        <th>품목</th>
+                        <th>재고량</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryRecords"></tbody>
+            </table>
+            <div class="page-buttons">
+                <button id="prevPageButton" disabled>이전</button>
+                <button id="nextPageButton" disabled>다음</button>
+            </div>
+        `;
+        
+        axios.post(mainServerIP + "/puchase", { uId: selectedUserId })
+            .then(response => {
+                const resultsArray = response.data.results.filter(item => item.status !== 1); // 재고
+                const totalPages = Math.ceil(resultsArray.length / itemsPerPage);
+
+                const renderInventoryRecords = (page) => {
+                    const inventoryContainer = document.getElementById('inventoryRecords');
+                    inventoryContainer.innerHTML = ''; // 기존 내용 초기화
+                    
+                    const startIndex = page * itemsPerPage;
+                    const endIndex = Math.min(startIndex + itemsPerPage, resultsArray.length);
+                    const currentInventory = resultsArray.slice(startIndex, endIndex);
+                    
+                    currentInventory.forEach(inventory => {
+                        const inventoryRow = document.createElement('tr');
+
+                        const dateTime = inventory.created_at.split('T');
+                        const inven_date = dateTime[0];
+                        
+                        inventoryRow.innerHTML = `
+                            <td>${inven_date}</td>
+                            <td>${inventory.name}</td>
+                            <td>${inventory.amount}</td>
+                        `;
+                        inventoryContainer.appendChild(inventoryRow);
+                    });
+
+                    // 이전 버튼 활성화/비활성화
+                    document.getElementById('prevPageButton').disabled = page === 0;
+                    // 다음 버튼 활성화/비활성화
+                    document.getElementById('nextPageButton').disabled = page >= totalPages - 1;
+                };
+
+                renderInventoryRecords(currentPage); // 초기 페이지 렌더링
+
+                // 페이지 전환 버튼
+                document.getElementById('prevPageButton').addEventListener('click', () => {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        renderInventoryRecords(currentPage);
+                    }
+                });
+
+                document.getElementById('nextPageButton').addEventListener('click', () => {
+                    if (currentPage < totalPages - 1) {
+                        currentPage++;
+                        renderInventoryRecords(currentPage);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading inventory data:', error);
+                showToast('재고 데이터를 불러오는 중 오류가 발생했습니다.');
+            });
+    } else if (section === '설정') {
+        contentArea.innerHTML = `
+            <h1>설정</h1>
             <div class="settings-container">
-                <h1>설정 (${userName})</h1>
                 <p id="currentThreshold"></p>
                 <div id="editSection">
                     <input type="number" id="newThreshold" min="0" max="100" />
@@ -362,61 +481,44 @@ const loadContent = (section, monitoringData, loggedInUsername, userName) => {
                 </div>
             </div>
         `;
-
-        // 기준 온도 가져오기 및 표시
-        fetch('http://localhost:3000/setting-data')
-            .then(response => response.json())
-            .then(settingData => {
-                const currentThreshold = settingData[loggedInUsername][userName].thresholdTemperature;
-                document.getElementById('currentThreshold').textContent = `알림 온도: ${currentThreshold}°C`;
-                document.getElementById('newThreshold').value = currentThreshold; // 기존 값을 input에 표시
-
-                // 저장 버튼 클릭 시 새로운 값을 서버에 저장
-                document.getElementById('saveSetting').addEventListener('click', () => {
-                    const newThreshold = parseInt(document.getElementById('newThreshold').value, 10); // 숫자로 변환
-                    
-                    if (isNaN(newThreshold)) {
-                        showToast('Please enter a valid number.');
-                        return;
-                    }
-                    
-                    // JSON 데이터 업데이트 요청
-                    const updatedSettingData = { ...settingData };
-                    updatedSettingData[loggedInUsername][userName].thresholdTemperature = newThreshold;
-
-                    fetch('http://localhost:3000/update-settings', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(updatedSettingData)
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            document.getElementById('currentThreshold').textContent = `설정 온도: ${newThreshold}°C`;
-                            showToast('Threshold updated successfully.');
-                        } else {
-                            throw new Error('Failed to save settings.');
-                        }
-                    })
-                    .catch(error => console.error('Error saving setting data:', error));
-                });
-            })
-            .catch(error => console.error('Error loading setting data:', error));
+    
+        // 설정 데이터 로드
+        loadSettingData(selectedUserId).then(settingData => {
+            // 현재 설정된 임계 온도를 표시
+            const currentThreshold = settingData.thresholdTemperature || 30; // 기본값 30도
+            document.getElementById('currentThreshold').textContent = `알림 온도: ${currentThreshold}°C`;
+            document.getElementById('newThreshold').value = currentThreshold;
+        });
+    
+        // 설정 저장 버튼 이벤트 리스너
+        document.getElementById('saveSetting').addEventListener('click', () => {
+            const newThreshold = parseInt(document.getElementById('newThreshold').value, 10);
+    
+            if (isNaN(newThreshold)) {
+                showToast('Please enter a valid number.');
+                return;
+            }
+    
+            // 새로운 설정 값을 저장
+            saveSettingData(selectedUserId, { thresholdTemperature: newThreshold });
+    
+            // 변경된 설정 값을 화면에 표시
+            document.getElementById('currentThreshold').textContent = `설정 온도: ${newThreshold}°C`;
+            showToast('Threshold updated successfully.');
+        });
     }
+    
 };
 
-// Toast 알림 표시 함수
+// Toast 메시지를 표시하는 함수
 const showToast = (message) => {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    toast.classList.add('show'); // Toast 표시
-
+    toast.classList.add('show');
+    
     setTimeout(() => {
-        toast.classList.remove('show'); // Toast 숨기기
-    }, 2000); // 2초 후 Toast가 사라짐
+        toast.classList.remove('show');
+    }, 2000); // 2초 후에 사라짐
 };
 
-
-// 초기 화면을 대시보드로 설정
 export default showDashboardScreen;
