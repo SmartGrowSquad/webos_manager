@@ -19,11 +19,7 @@ const showUserScreen = (loggedInUsername) => {
     let currentPage = 0;
 
     // JSON 데이터를 동적으로 가져와서 표시
-    Promise.all([
-        fetch('./data/userData.json').then(response => response.json()),
-        fetch('./data/settingData.json').then(response => response.json()) // 기준 온도 데이터 가져오기
-    ])
-    .then(([userData, settingData]) => {
+    loadUserData(loggedInUsername).then(([userData, settingData]) => {
         const filteredUsers = userData[loggedInUsername]; // username에 해당하는 사용자만 가져오기
         const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
         
@@ -102,6 +98,14 @@ const showUserScreen = (loggedInUsername) => {
         updatePageButtons();
     })
     .catch(error => console.error('Error loading user data:', error));
+};
+
+// 사용자 데이터 및 설정 데이터 가져오기
+const loadUserData = (loggedInUsername) => {
+    return Promise.all([
+        fetch('http://localhost:3000/user-data').then(response => response.json()), // 사용자 데이터
+        fetch('http://localhost:3000/setting-data').then(response => response.json()) // 설정 데이터
+    ]);
 };
 
 // showUserScreen 함수를 기본으로 내보내기

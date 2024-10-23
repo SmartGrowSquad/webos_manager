@@ -13,14 +13,6 @@ const renderPage = () => {
         import('./auth.js').then(module => {
             module.default();
         });
-    } else if (currentPage === 'monitoring') {
-        import('./monitoring.js').then(module => {
-            if (selectedMonitoringData) {
-                module.default(selectedMonitoringData, loggedInUsername, selectedUserName); // 모니터링 데이터와 사용자 이름 전달
-            } else {
-                console.error('No monitoring data found for user');
-            }
-        });
     } else if (currentPage === 'user') {
         root.innerHTML = ''; // root 비우기
         import('./user.js').then(module => {

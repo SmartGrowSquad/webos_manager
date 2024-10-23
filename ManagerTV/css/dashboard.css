@@ -7,6 +7,8 @@
     width: 200px;
     background-color: #f4f4f4;
     padding: 10px;
+    position: relative; /* Ensure the sidebar is positioned */
+    z-index: 10;
 }
 
 .sidebar-btn {
@@ -16,19 +18,101 @@
     cursor: pointer;
     background-color: #ddd;
     border: none;
-    text-align: left;
+    text-align: center;
 }
 
 .content {
     flex: 1;
     padding: 20px;
     background-color: #fff;
-    border-left: 1px solid #ccc;
     display: flex;
+    position: relative;
+    flex-direction: column;
+    justify-content: flex-start; /* Content starts from the top */
+    align-items: center;
+}
+
+/* Common style for both settings and sales records to ensure uniform heading positioning */
+.common-heading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Align content to the top */
+    align-items: center; /* Horizontally center */
+    height: 100vh; /* Full height of the viewport */
+    text-align: center;
+    padding-top: 40px; /* Add padding to move the content slightly down */
+}
+
+.common-heading-container h1 {
+    margin-bottom: 20px; /* Space between heading and next content */
+}
+
+/* Monitoring Container (온습도) */
+.monitoring-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center */
+    align-items: center; /* Horizontally center */
+    width: 100%;
+    height: 100%;
+}
+
+.graph-container {
+    width: 45%;
+    margin: 0 20px;
+    margin-top: -80px
+}
+
+#temperatureGraph, #humidityGraph {
+    border-radius: 8px;
+    height: 100%;
+    width: 100%;
+}
+
+/* Sales Records Container */
+#salesRecords {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Start content from the top */
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    padding-top: 40px; /* Same padding as settings to ensure same position */
+}
+
+#salesRecords p {
+    margin: 10px 0; /* Add some space between sales record items */
+}
+
+/* Settings Container */
+.settings-container {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    justify-content: flex-start; /* Align content to the top */
+    align-items: center; /* Center horizontally */
+    height: 100vh; /* Full height of the viewport */
+    text-align: center; /* Center text */
+    padding-top: 0px; /* Same padding as sales records to ensure same position */
+}
+
+#currentThreshold {
+    margin-bottom: 20px; /* Space between threshold text and input field */
+    margin-top: 100px;
+}
+
+#editSection {
+    display: flex;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
 }
 
+#editSection input {
+    margin-right: 10px; /* Add spacing between the input and save button */
+}
+
+/* Toast Notifications */
 .toast {
     position: fixed;
     bottom: 10px;
@@ -41,30 +125,75 @@
     display: none;
 }
 
-.back-btn {
-    margin-bottom: 110%;
-    text-align: center;
-}
-
 .toast.show {
     display: block;
 }
 
-.monitoring-container {
-    display: flex;
-    flex-direction: row;
+/* Back Button */
+.back-btn {
+    margin-bottom: 110%;
+    text-align: center;
+}
+.graph-left {
+    margin-bottom: 120px; /* Add space to the right of the first chart */
+}
+
+.growth-container {
+    display: grid;
+    grid-gap: 20px; /* 각 칸 사이의 간격 */
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: 100%;
+    min-height: 70vh; /* 최소 높이 설정 */
+    margin-right: 20%;
 }
 
-.graph-container {
-    width: 45%;
-    margin: 0 20px;
+
+.growth-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    grid-gap: 20px;
+    border-radius: 8px;
+    height: 150%; /* 그리드 전체 높이 조정 */
+    width: 150%;
+    margin-bottom: 10px;
+    margin-top: 20px;
 }
 
-canvas {
-    height: 400px;
+.growth-item canvas {
+    height: 100%; /* 차트가 부모 요소에 맞게 자동 조정 */
+    width: 100%; /* 차트가 부모 요소 너비에 맞게 조정 */
+    max-height: 400px; /* 최대 높이를 제한 */
+    max-width: 700px; /* 최대 너비를 제한 */
+}
+
+.growth_page-buttons {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    bottom: 10px;
     width: 100%;
+    margin-left: 10%;
+}
+
+
+.growth_page-buttons button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    background-color: #ddd;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.growth_page-buttons button:hover {
+    background-color: #bbb;
+}
+
+.warning {
+    color: red;
 }

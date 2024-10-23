@@ -1,5 +1,3 @@
-// js/auth.js
-
 const showAuthScreen = () => {
     const root = document.getElementById('root');
     root.innerHTML = `
@@ -28,7 +26,7 @@ const handleLogin = () => {
 
     authenticateUser(username, password).then(user => {
         if (user) {
-            changePage('user', user.username); // 모니터링 화면으로 전환
+            changePage('user', user.username); // 사용자 화면으로 전환
         } else {
             showToast('Invalid username or password'); // Toast 알림 표시
         }
@@ -37,7 +35,7 @@ const handleLogin = () => {
 
 // 사용자 인증 함수
 const authenticateUser = (username, password) => {
-    return fetch('./data/authData.json') // JSON 파일을 비동기로 가져옵니다.
+    return fetch('http://localhost:3000/auth-data') // 서버에서 authData.json 데이터를 가져옴
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -49,7 +47,7 @@ const authenticateUser = (username, password) => {
         })
         .catch(error => {
             console.error('Error loading auth data:', error);
-            return null; // 오류가 발생한 경우 null을 반환합니다.
+            return null; // 오류가 발생한 경우 null 반환
         });
 };
 
@@ -61,7 +59,7 @@ const showToast = (message) => {
 
     setTimeout(() => {
         toast.classList.remove('show'); // Toast 숨기기
-    }, 2000); // 2초 후에 Toast가 사라짐
+    }, 2000); // 2초 후 Toast가 사라짐
 };
 
 // showAuthScreen 함수를 기본으로 내보내기
